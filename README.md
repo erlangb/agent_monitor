@@ -1,50 +1,50 @@
 # AgentMonitor
 
-A Go application for running and inspecting AI agent use cases, built on the [Eino](https://github.com/cloudwego/eino) framework by CloudWeGo.
+A Go-based observability playground for inspecting AI agent reasoning, costs, and pipelines.
+
+Built on the [CloudWeGo Eino](https://github.com/cloudwego/eino) framework, AgentMonitor provides a transparent environment to run, test, and debug multi-step agentic workflows.
 
 ---
 
-## Why this project exists
+## The Problem: Debugging the "Black Box"
 
-While exploring agentic programming in Go, I kept running into the same problem: **how do you know what's actually happening inside an agent pipeline?**
+When building agentic pipelines in Go, the biggest hurdle is visibility. Most developers default to grepping logs or scattering `fmt.Println` calls throughout their code. While this works for a simple "Prompt → Response" flow, it becomes unmanageable for long-running agentic scenarios.
 
-You send a prompt. A few seconds pass. You get a result. But what happened in between?
+In complex loops, standard logging makes it nearly impossible to track:
 
-- How many LLM calls were made?
-- Which tools did it call?
-- How much did it cost?
-- What was the reasoning at each step?
+- **The "Why"**: Which specific reasoning step led the agent to a wrong conclusion?
+- **The "How Much"**: What was the cumulative token cost of a 5-step reflexion loop?
+- **The "What"**: Which tool was called, with what arguments, and what was the raw return?
 
-As a developer I want this information to be clear — especially while building, when you need to run the whole pipeline or individual steps and understand exactly what's going on. **Most frameworks give you none of that by default.** You're left grepping logs or scattering `fmt.Println` calls around, which quickly becomes unmanageable for multi-step pipelines.
+AgentMonitor help to solve this by leveraging two specific tools:
 
-So I built two things to fix this:
-
-- A small, framework-agnostic **observability library** called [agentmeter](https://github.com/erlangb/agentmeter) that hooks into your agent calls and tracks token usage, cost, and reasoning steps.
-- For this project I chose [Eino](https://github.com/cloudwego/eino), so I also wrote a simple [Eino adapter](https://github.com/erlangb/agentmeter/tree/main/adapters/eino) that wires agentmeter into Eino's callback system with minimal setup.
+- [agentmeter](https://github.com/erlangb/agentmeter) — a framework-agnostic library for tracking token usage, costs, and reasoning steps.
+- [agentmeter Eino adapter](https://github.com/erlangb/agentmeter/tree/main/adapters/eino) — a driver that hooks into Eino's callback system to intercept every node execution.
 
 **AgentMonitor is the playground where all of this comes together: a structured, testable agent runner with a built-in reasoning trace you can actually read.**
 
 ---
 
-## What you can see
+## Choosing a Use Case
 
-The screenshots below show the full pipeline for the FindMovies use case in action.
+At startup, both runners present a menu of available pipelines:
 
-After every query, the runner calls `printer.PrintHistory(meter.History())` and dumps the full reasoning trace. For a multi-step pipeline like FindMovies, this means you can watch:
+![Agent selector](docs/agent_selector.png)
 
-- The **refiner** extracting structured search params from your raw text
-- The **cinephile** suggesting a first draft of films
-- The **clerk** fact-checking them via Tavily search (you can see which tools it called and why)
-- The **clerk deciding** whether to loop back to the cinephile or accept the list
-- The **curator** pruning and finalising the result
+| Use case | What it does |
+|---|---|
+| Simple LLM | Direct GPT call, no tools |
+| Cinephile | Structured extraction of movie search params from free text |
+| FindMovies | Full reflexion pipeline: refiner → cinephile → clerk (Tavily) → curator |
+| Refiner Query | Standalone query refiner for inspection |
 
-Every step shows token usage and cost. You don't have to guess whether the reflexion loop ran twice or four times — you can read it.
+---
 
-```
-docs/thinking.png          — reasoning trace for a single query
-docs/clerk_tavily_reason.png   — clerk's tool calls and verdicts
-docs/stats.png             — token/cost summary after the run
-```
+## Visibility in Action
+
+Structured reasoning trace provided by the agentmeter integration.
+
+After every query, the runner dumps the full reasoning trace via `printer.PrintHistory(meter.History())`. For a multi-step pipeline like FindMovies (described below), this means you can watch every node, token count, and decision in sequence:
 
 ![Reasoning trace](docs/thinking.png)
 ![Clerk Tavily reasoning](docs/clerk_tavily_reason.png)
@@ -52,41 +52,40 @@ docs/stats.png             — token/cost summary after the run
 
 ---
 
-## The structure
+## Project Architecture
 
-The code is split into four layers:
+The application is designed so that any new use case can be easily written and run. Whether you are testing a simple LLM call or a complex multi-agent graph, the architecture remains plug-and-play.
 
-**UI** — two interchangeable runners: a bubbletea TUI and a plain terminal. Both implement `Runner`. They know nothing about LLMs or agents.
-
-**Use cases** — each use case implements `UseCase.Run(ctx, input) → string`. It owns one complete pipeline. The use case is the seam between the UI and the framework.
-
-**Agent nodes** — the actual LLM logic. Each node is a Go struct wrapping a compiled Eino chain or `adk.Agent`. Nodes take a typed state, call a model, mutate state, return it. `Invoke` is the test seam.
-
-**Infrastructure** — factories for model and MCP client creation, config loaded once via koanf, env vars expanded at startup.
+| Layer | Responsibility |
+|---|---|
+| **UI** | Interchangeable runners (TUI or Terminal). Implements a simple `Runner` interface. |
+| **Use Cases** | The entry point. Any custom pipeline implementing `UseCase.Run` can be registered and executed. |
+| **Agent Nodes** | Atomic units of logic. Wraps Eino chains or `adk.Agent` to handle state mutations. `Invoke` is the test seam. |
+| **Infrastructure** | Management of model providers, MCP clients, and configuration via Koanf. |
 
 ---
 
-## The main pipeline: FindMovies
+## Example Agentic Scenario: FindMovies
 
-The most complete example is `FindMoviesUseCase`. It takes a free-text movie request and returns a curated, fact-checked list of underground films using a reflexion loop.
+While you can write and run any use case, `FindMoviesUseCase` is included as a deep example of an agentic reflexion pipeline. It takes a free-text movie request and returns a curated, fact-checked list using a multi-stage loop:
 
 ```mermaid
 flowchart TD
-	    START --> refiner["refiner (query input)"]
-	    refiner --> cinephile
-	    cinephile --> clerk
-	    clerk -->|not satisfied & retries left| cinephile
-	    clerk -->|satisfied OR max retries| curator
-	    curator --> END
+    START --> refiner["refiner (query input)"]
+    refiner --> cinephile
+    cinephile --> clerk
+    clerk -->|not satisfied & retries left| cinephile
+    clerk -->|satisfied OR max retries| curator
+    curator --> END
 ```
 
-The reflexion loop runs inside an Eino `compose.Graph` with a branch condition on the shared state. The clerk uses `adk.Agent` for its tool-calling loop (model → Tavily → model). Everything else uses `compose.Chain` for simple linear steps.
+- **Refiner**: Extracts structured search parameters from raw text.
+- **Cinephile**: Drafts an initial list of films.
+- **Clerk**: A tool-calling agent that fact-checks the list using Tavily.
+- **Reflexion Loop**: If the Clerk identifies inaccuracies, it triggers a retry back to the Cinephile.
+- **Curator**: Finalizes and prunes the results.
 
-```
-docs/movie_finder_critics_and_refinement.png — the full loop in action
-docs/inspect_query_refiner.png               — refiner extracting structured params
-docs/result.png                              — final curated output
-```
+The reflexion loop runs inside an Eino `compose.Graph` with a branch condition on the shared state. The Clerk uses `adk.Agent` for its tool-calling loop (model → Tavily → model). Everything else uses `compose.Chain` for simple linear steps.
 
 ![FindMovies loop](docs/movie_finder_critics_and_refinement.png)
 ![Query refiner](docs/inspect_query_refiner.png)
@@ -94,21 +93,28 @@ docs/result.png                              — final curated output
 
 ---
 
-## How to run locally
+## Getting Started
 
-### Requirements
+### Prerequisites
 
 - Go 1.25+
 - [mockery](https://github.com/vektra/mockery) (for `make mocks`)
 - OpenAI API key
 - Tavily API key (for the FindMovies use case)
 
-### Setup
+### Installation
 
 ```bash
+# 1. Setup environment
 cp .env.dist .env
 # fill in your keys in .env
+
+# 2. Install dependencies and generate mocks
 make deps
+make mocks
+
+# 3. Launch the TUI
+make run-tea
 ```
 
 ### Run
@@ -146,31 +152,12 @@ Configuration lives in `config/config.yaml`. Secrets are set via environment var
 
 ---
 
-## Choosing a use case
-
-At startup, both runners present a menu of available pipelines:
-
-```
-docs/agent_selector.png
-```
-
-![Agent selector](docs/agent_selector.png)
-
-| Use case | What it does |
-|---|---|
-| Simple LLM | Direct GPT call, no tools |
-| Cinephile | Structured extraction of movie search params from free text |
-| FindMovies | Full reflexion pipeline: refiner → cinephile → clerk (Tavily) → curator |
-| Refiner Query | Standalone query refiner for inspection |
-
----
-
-## Tech stack
+## Tech Stack
 
 - [Eino](https://github.com/cloudwego/eino) — AI orchestration (`compose.Chain`, `compose.Graph`, `adk.Agent`, callbacks)
-- [agentmeter](https://github.com/erlangb/agentmeter) — token/cost tracking and reasoning trace printer
+- [agentmeter](https://github.com/erlangb/agentmeter) — token/cost tracking and reasoning trace
+- [agentmeter Eino adapter](https://github.com/erlangb/agentmeter/tree/main/adapters/eino) — Eino callback integration
 - [bubbletea](https://github.com/charmbracelet/bubbletea) — TUI
 - [koanf](https://github.com/knadh/koanf) — config
 - [sonic](https://github.com/bytedance/sonic) — JSON
-- [testify](https://github.com/stretchr/testify) — tests
-- [mockery](https://github.com/vektra/mockery) — mock generation
+- [testify](https://github.com/stretchr/testify) + [mockery](https://github.com/vektra/mockery) — testing
