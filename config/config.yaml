@@ -1,0 +1,31 @@
+# Default configuration for AgentMonitor.
+#
+# Env var override convention: APP_ENV_ prefix + double-underscore (__) as
+# the nesting separator. Single underscores are preserved in key names.
+#
+#   APP_ENV_APP__NAME                    → app.name
+#   APP_ENV_MODELS__OPENAI__API_KEY      → models.openai.api_key
+app:
+  name: AgentMonitor
+  env: development
+  version: "0.1.0"
+
+# Models are named entries; agents reference them by name.
+# Set the API key via: APP_ENV_MODELS__OPENAI__API_KEY=sk-...
+models:
+  openai:
+    provider: openai
+    api_key: ""
+    model_id: gpt-4o
+
+# MCP servers are loaded as agent tools.
+# Per server: url (required). transport: sse (default) or streamableHttp.
+# api_key: injected as Authorization: Bearer header.
+# Set via: APP_ENV_TOOLS__MCP_SERVERS__0__API_KEY
+tools:
+  mcp_servers:
+    - name: tavily
+      url: "https://mcp.tavily.com/mcp/"
+      transport: streamableHttp
+      api_key: "$TAVILY_API_KEY"
+  commands: []

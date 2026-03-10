@@ -1,0 +1,13 @@
+all: false
+dir: 'internal/client/mocks'
+filename: 'mock_{{.InterfaceName}}.go'
+structname: 'Mock{{.InterfaceName}}'
+pkgname: mocks
+recursive: false
+
+template: testify
+formatter: goimports
+packages:
+  erlangb/agentmonitor/internal/client:
+    interfaces:
+      EinoMcpClient:

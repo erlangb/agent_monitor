@@ -1,0 +1,16 @@
+# Go
+*.out
+*.test
+*.prof
+.coverprofile
+
+# Binaries
+bin/
+dist/
+
+# Misc
+.env
+.env.local
+*.pem
+*.key
+*.crt
