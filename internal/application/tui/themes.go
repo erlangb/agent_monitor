@@ -6,51 +6,56 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
+var primary = lipgloss.Color("#018281")
+var secondary = lipgloss.Color("238")
+var white = lipgloss.Color("255")
+var red = lipgloss.Color("167")
+
 var (
 	// Runner
-	runnerTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("255"))
-	runnerDescStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	runnerExampleStyle  = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("238"))
-	runnerYouStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#018281"))
-	runnerHintStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
-	runnerThinkingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#018281")).Blink(true)
-	runnerErrorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("167"))
-	answerStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
+	runnerTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(primary)
+	runnerDescStyle     = lipgloss.NewStyle().Foreground(secondary)
+	runnerExampleStyle  = lipgloss.NewStyle().Italic(true).Foreground(secondary)
+	runnerYouStyle      = lipgloss.NewStyle().Bold(true).Foreground(primary)
+	runnerHintStyle     = lipgloss.NewStyle().Foreground(secondary)
+	runnerThinkingStyle = lipgloss.NewStyle().Foreground(primary).Blink(true)
+	runnerErrorStyle    = lipgloss.NewStyle().Foreground(red)
+	answerStyle         = lipgloss.NewStyle().Foreground(white)
 	answerBorderStyle   = lipgloss.NewStyle().
 				BorderStyle(lipgloss.NormalBorder()).
 				BorderLeft(true).
-				BorderForeground(lipgloss.Color("#018281")).
+				BorderForeground(primary).
 				PaddingLeft(1)
-	replDividerStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-	tokenSummaryStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+	replDividerStyle  = lipgloss.NewStyle().Foreground(secondary)
+	tokenSummaryStyle = lipgloss.NewStyle().Foreground(white)
 
 	// Inspect
-	inspectBadgeStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("255")).Background(lipgloss.Color("#018281")).Padding(0, 1)
-	inspectAccentStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#018281"))
-	inspectDividerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+	inspectBadgeStyle   = lipgloss.NewStyle().Bold(true).Foreground(white).Background(primary).Padding(0, 1)
+	inspectAccentStyle  = lipgloss.NewStyle().Bold(true).Foreground(primary)
+	inspectDividerStyle = lipgloss.NewStyle().Foreground(secondary)
 	inspectStepStyle    = lipgloss.NewStyle().
 				BorderStyle(lipgloss.NormalBorder()).
 				BorderLeft(true).
-				BorderForeground(lipgloss.Color("#018281")).
+				BorderForeground(primary).
 				PaddingLeft(1)
 )
 
 var (
 	// Selector
-	selectorTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#018281")).Padding(0, 1).MarginBottom(1)
+	selectorTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(primary).Padding(0, 1).MarginBottom(1)
 	selectedItemStyle  = lipgloss.NewStyle().
 				Bold(true).
 				PaddingLeft(1).
 				BorderStyle(lipgloss.NormalBorder()).
 				BorderLeft(true).
-				BorderForeground(lipgloss.Color("#018281")).
-				Foreground(lipgloss.Color("255"))
-	normalItemStyle   = lipgloss.NewStyle().PaddingLeft(3).Foreground(lipgloss.Color("245"))
-	selectedDescStyle = lipgloss.NewStyle().PaddingLeft(5).Foreground(lipgloss.Color("245"))
-	normalDescStyle   = lipgloss.NewStyle().PaddingLeft(5).Foreground(lipgloss.Color("238"))
-	selectorHintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+				BorderForeground(primary).
+				Foreground(white)
+	normalItemStyle   = lipgloss.NewStyle().PaddingLeft(3).Foreground(primary)
+	selectedDescStyle = lipgloss.NewStyle().PaddingLeft(5).Foreground(primary)
+	normalDescStyle   = lipgloss.NewStyle().PaddingLeft(5).Foreground(secondary)
+	selectorHintStyle = lipgloss.NewStyle().Foreground(secondary)
 	selectorBoxStyle  = lipgloss.NewStyle().
 				BorderStyle(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("236")).
+				BorderForeground(secondary).
 				Padding(1, 2)
 )

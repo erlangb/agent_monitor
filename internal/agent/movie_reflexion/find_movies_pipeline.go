@@ -29,13 +29,13 @@ func NewFindMoviesPipeline(
 ) (FindMoviesPipeline, error) {
 	g := compose.NewGraph[*appmodel.FindMoviesState, *appmodel.FindMoviesState]()
 
-	if err := g.AddLambdaNode("cinephile", compose.InvokableLambda(cinephile.Invoke)); err != nil {
+	if err := g.AddLambdaNode("cinephile", compose.InvokableLambda(cinephile.Invoke), compose.WithNodeName("cinephile")); err != nil {
 		return nil, err
 	}
-	if err := g.AddLambdaNode("clerk", compose.InvokableLambda(clerk.Invoke)); err != nil {
+	if err := g.AddLambdaNode("clerk", compose.InvokableLambda(clerk.Invoke), compose.WithNodeName("clerk")); err != nil {
 		return nil, err
 	}
-	if err := g.AddLambdaNode("curator", compose.InvokableLambda(curator.Invoke)); err != nil {
+	if err := g.AddLambdaNode("curator", compose.InvokableLambda(curator.Invoke), compose.WithNodeName("curator")); err != nil {
 		return nil, err
 	}
 

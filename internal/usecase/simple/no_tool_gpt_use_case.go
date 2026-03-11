@@ -2,7 +2,7 @@ package simple
 
 import (
 	"context"
-	"erlangb/agentmonitor/internal/agent"
+	"erlangb/agentmonitor/internal/agent/einoagent"
 	"erlangb/agentmonitor/internal/factory"
 	"erlangb/agentmonitor/internal/usecase"
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
-const ciphopherPrompt = `# ROLE: Just an hello world agent app`
+const simpleHelloPrompt = `# ROLE: Just an hello world agent app`
 
 // SimpleAgentLLMNoTools is a minimal use case that sends the user input straight to GPT with no tools.
 type SimpleAgentLLMNoTools struct {
@@ -37,7 +37,7 @@ func (u *SimpleAgentLLMNoTools) Run(ctx context.Context, input string) (string, 
 	ag, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:          "simple_agent",
 		Description:   "simple agent",
-		Instruction:   ciphopherPrompt,
+		Instruction:   simpleHelloPrompt,
 		Model:         chatModel,
 		MaxIterations: 1,
 	})
@@ -47,7 +47,7 @@ func (u *SimpleAgentLLMNoTools) Run(ctx context.Context, input string) (string, 
 
 	ctx = u.PrepareRun(ctx, u.Name())
 
-	answer, err := agent.RunAgentMessages(ctx, ag, []*schema.Message{schema.UserMessage(input)})
+	answer, err := einoagent.RunAgentMessages(ctx, ag, []*schema.Message{schema.UserMessage(input)})
 	if err != nil {
 		return "", err
 	}

@@ -10,4 +10,4 @@ formatter: goimports
 packages:
   erlangb/agentmonitor/internal/client:
     interfaces:
-      EinoMcpClient:
+      McpClient:

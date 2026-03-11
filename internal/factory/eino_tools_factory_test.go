@@ -17,13 +17,6 @@ func TestCreateMCPToolClient_ServerNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), `"missing" not found in config`)
 }
 
-func TestCreateTavilySpecializedTool_ServerNotFound(t *testing.T) {
-	f := factoryWithServers()
-	_, err := f.CreateTavilySpecializedTool(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `"tavily" not found in config`)
-}
-
 func TestCreateCommandMcpClient_CommandNotFound(t *testing.T) {
 	f := factoryWithCommands()
 	_, err := f.CreateCommandMcpClient(context.Background(), "missing")

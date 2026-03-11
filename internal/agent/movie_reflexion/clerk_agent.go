@@ -3,6 +3,7 @@ package movie_reflexion
 import (
 	"context"
 	"erlangb/agentmonitor/internal/agent"
+	"erlangb/agentmonitor/internal/agent/einoagent"
 	"fmt"
 
 	appmodel "erlangb/agentmonitor/internal/model"
@@ -21,6 +22,7 @@ You are a pedantic, data-driven movie database clerk. You have no taste — only
 
 # RESPONSIBILITIES
 - Verify that each suggested movie actually exists using your search tool
+- For each movie: call tavily_search with max_results=3
 - Check release years, directors, and basic facts to match the user's request
 - Determine if the movies match the user's request
 - Be literal and objective: if a movie doesn't exist, say so
@@ -95,7 +97,7 @@ func (s *ClerkAgent) Invoke(ctx context.Context, state *appmodel.FindMoviesState
 		return nil, fmt.Errorf("clerk template: %w", err)
 	}
 
-	answer, err := agent.RunAgentMessages(ctx, s.agent, msgs)
+	answer, err := einoagent.RunAgentMessages(ctx, s.agent, msgs)
 	if err != nil {
 		return nil, fmt.Errorf("clerk run: %w", err)
 	}

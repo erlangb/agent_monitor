@@ -56,5 +56,5 @@ func (u *CinephileUseCase) ExampleInput() string {
 }
 
 func (u *CinephileUseCase) Description() string {
-	return "Cinephile — underground cinema oracle. Suggests obscure films with no external search."
+	return "Cinephile Agent — it suggests movies with no external search."
 }

@@ -56,5 +56,6 @@ func (u *RefinerQueryUseCase) ExampleInput() string {
 }
 
 func (u *RefinerQueryUseCase) Description() string {
-	return "Refiner — extracts structured search parameters (genre, years, mood) from a free-text movie query."
+	return "Refiner — extracts structured search parameters (genre, years, mood) from a free-text movie query." +
+		"\nIt show a simple step aims to understand the user intent and extract the relevant search parameters."
 }

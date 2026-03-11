@@ -1,4 +1,4 @@
-package agent
+package einoagent
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 )
 
 // RunAgentMessages runs an adk.Agent with pre-formatted messages.
+// specific eino helper to run a single eino agent
 func RunAgentMessages(ctx context.Context, a adk.Agent, messages []*schema.Message) (string, error) {
 	runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: a})
 

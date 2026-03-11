@@ -13,7 +13,6 @@ import (
 	mcpclient "github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/samber/lo"
 )
 
 const (
@@ -21,12 +20,10 @@ const (
 	transportStreamableHTTPClient = "streamablehttp"
 )
 
-// EinoMcpClient is the interface consumers depend on for MCP interactions.
-type EinoMcpClient interface {
-	ListTools(ctx context.Context) ([]mcp.Tool, error)
+// McpClient is the interface consumers depend on for MCP interactions.
+type McpClient interface {
 	CallTool(ctx context.Context, name string, args map[string]any) (*mcp.CallToolResult, error)
 	Close() error
-	EinoTools(ctx context.Context, filter []mcp.Tool) ([]etool.BaseTool, error)
 }
 
 // options holds the configuration for building a Client.
@@ -87,7 +84,7 @@ func (o *options) validate() error {
 	return nil
 }
 
-// Client wraps an mcp-go connection and implements EinoMcpClient.
+// Client wraps an mcp-go connection.
 type Client struct {
 	inner *mcpclient.Client
 }
@@ -176,33 +173,13 @@ func (c *Client) resultHandler(ctx context.Context, name string, result *mcp.Cal
 	return result, nil
 }
 
-func (c *Client) ListTools(ctx context.Context) ([]mcp.Tool, error) {
-	result, err := c.inner.ListTools(ctx, mcp.ListToolsRequest{
-		PaginatedRequest: mcp.PaginatedRequest{},
-		Header:           nil,
+// GetEinoTools returns the named tools as Eino BaseTool instances.
+func (c *Client) GetEinoTools(ctx context.Context, toolNames []string) ([]etool.BaseTool, error) {
+	return toolmcp.GetTools(ctx, &toolmcp.Config{
+		Cli:                   c.inner,
+		ToolNameList:          toolNames,
+		ToolCallResultHandler: c.resultHandler,
 	})
-
-	if err != nil {
-		return nil, fmt.Errorf("mcp: failed to get tools")
-	}
-
-	return result.Tools, nil
-}
-
-func (c *Client) EinoTools(ctx context.Context, filter []mcp.Tool) ([]etool.BaseTool, error) {
-	tools := lo.Map(filter, func(item mcp.Tool, _ int) string {
-		return item.Name
-	})
-
-	einoTools, err := toolmcp.GetTools(
-		ctx,
-		&toolmcp.Config{
-			Cli:                   c.inner,
-			ToolNameList:          tools,
-			ToolCallResultHandler: c.resultHandler,
-		},
-	)
-	return einoTools, err
 }
 
 // expandHeaders expands $ENV_VAR references in header values.

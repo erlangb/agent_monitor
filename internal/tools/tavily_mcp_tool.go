@@ -6,50 +6,61 @@ import (
 	"erlangb/agentmonitor/internal/model"
 	"fmt"
 
-	"github.com/cloudwego/eino/components/tool"
-	toolutils "github.com/cloudwego/eino/components/tool/utils"
+	"github.com/bytedance/sonic"
 )
 
-// TavilyMCPTool wraps an EinoMcpClient to expose Tavily search as an Eino tool.
-type TavilyMCPTool struct {
-	client tool_mcp.EinoMcpClient
+// TavilyMcp wraps a McpClient to expose Tavily search as a domain tool.
+type TavilyMcp struct {
+	client tool_mcp.McpClient
 }
 
-// NewTavilyMCPTool wraps an EinoMcpClient and returns a TavilyMCPTool.
-func NewTavilyMCPTool(c tool_mcp.EinoMcpClient) *TavilyMCPTool {
-	return &TavilyMCPTool{client: c}
+// NewTavilyMcp wraps a McpClient and returns a TavilyMcp.
+func NewTavilyMcp(c tool_mcp.McpClient) *TavilyMcp {
+	return &TavilyMcp{client: c}
 }
 
-func (t *TavilyMCPTool) Close() error {
+func (t *TavilyMcp) Close() error {
 	if t.client == nil {
 		return nil
 	}
 	return t.client.Close()
 }
 
-func (t *TavilyMCPTool) TavilySearch(ctx context.Context, query string) ([]byte, error) {
-	result, err := t.client.CallTool(ctx, "tavily_search", map[string]any{"query": query})
+// TavilySearch calls the Tavily MCP tool and returns a JSON string containing only
+// content+score per result (Tolerant Reader). The MCP envelope is unwrapped and the
+// Tavily payload is re-encoded in one pass — no intermediate struct round-trip.
+func (t *TavilyMcp) TavilySearch(ctx context.Context, query string, maxResults int) (string, error) {
+	result, err := t.client.CallTool(ctx, "tavily_search", map[string]any{"query": query, "max_results": maxResults})
 	if err != nil {
-		return nil, fmt.Errorf("tavily_search call: %w", err)
+		return "", fmt.Errorf("tavily_search call: %w", err)
 	}
-	return result.MarshalJSON()
+
+	mcpRaw, err := result.MarshalJSON()
+	if err != nil {
+		return "", fmt.Errorf("tavily_search marshal: %w", err)
+	}
+
+	var envelope struct {
+		Content []struct {
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := sonic.Unmarshal(mcpRaw, &envelope); err != nil {
+		return "", fmt.Errorf("tavily_search unmarshal envelope: %w", err)
+	}
+	if len(envelope.Content) == 0 {
+		return "", fmt.Errorf("tavily_search: empty content")
+	}
+
+	var resp model.TavilySearchResponse
+	if err := sonic.UnmarshalString(envelope.Content[0].Text, &resp); err != nil {
+		return "", fmt.Errorf("tavily_search unmarshal response: %w", err)
+	}
+
+	out, err := sonic.Marshal(resp.Results)
+	if err != nil {
+		return "", fmt.Errorf("tavily_search marshal results: %w", err)
+	}
+	return string(out), nil
 }
 
-func (t *TavilyMCPTool) asTavilySearchTool() (tool.BaseTool, error) {
-	return toolutils.InferTool[model.TavilyQuery, string](
-		"tavily_search",
-		"Search on tavily",
-		func(ctx context.Context, input model.TavilyQuery) (string, error) {
-			cont, err := t.TavilySearch(ctx, input.Query)
-			return string(cont), err
-		},
-	)
-}
-
-// GetTools returns all Eino tools provided by this MCP wrapper.
-func (t *TavilyMCPTool) GetTools(ctx context.Context) ([]tool.BaseTool, error) {
-	// More tools from client can be added here.
-
-	tavilyTool, err := t.asTavilySearchTool()
-	return []tool.BaseTool{tavilyTool}, err
-}

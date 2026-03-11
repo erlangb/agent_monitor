@@ -6,11 +6,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cloudwego/eino/components/tool"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// tavilyResultText is a minimal valid Tavily search response JSON that
+// TavilySearch can parse end-to-end.
+const tavilyResultText = `{"results":[{"content":"fresh tuna off the Azores","score":0.95}]}`
 
 func TestTavilySearch(t *testing.T) {
 	tests := []struct {
@@ -24,7 +27,7 @@ func TestTavilySearch(t *testing.T) {
 		{
 			name:         "success",
 			query:        "tuna fishing spots",
-			mockResult:   &mcp.CallToolResult{},
+			mockResult:   mcp.NewToolResultText(tavilyResultText),
 			wantNonEmpty: true,
 		},
 		{
@@ -37,13 +40,13 @@ func TestTavilySearch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mc := mocks.NewMockEinoMcpClient(t)
+			mc := mocks.NewMockMcpClient(t)
 			mc.EXPECT().
-				CallTool(context.Background(), "tavily_search", map[string]any{"query": tt.query}).
+				CallTool(context.Background(), "tavily_search", map[string]any{"query": tt.query, "max_results": 5}).
 				Return(tt.mockResult, tt.mockErr)
 
-			tool := NewTavilyMCPTool(mc)
-			got, err := tool.TavilySearch(context.Background(), tt.query)
+			tool := NewTavilyMcp(mc)
+			got, err := tool.TavilySearch(context.Background(), tt.query, 5)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -51,7 +54,7 @@ func TestTavilySearch(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				if tt.wantNonEmpty {
-					assert.NotNil(t, got)
+					assert.NotEmpty(t, got)
 				}
 			}
 		})
@@ -81,13 +84,13 @@ func TestTavilyClose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var subject *TavilyMCPTool
+			var subject *TavilyMcp
 			if tt.nilClient {
-				subject = NewTavilyMCPTool(nil)
+				subject = NewTavilyMcp(nil)
 			} else {
-				mc := mocks.NewMockEinoMcpClient(t)
+				mc := mocks.NewMockMcpClient(t)
 				mc.EXPECT().Close().Return(tt.closeErr)
-				subject = NewTavilyMCPTool(mc)
+				subject = NewTavilyMcp(mc)
 			}
 
 			err := subject.Close()
@@ -98,15 +101,4 @@ func TestTavilyClose(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetTools(t *testing.T) {
-	mc := mocks.NewMockEinoMcpClient(t)
-	subject := NewTavilyMCPTool(mc)
-
-	tools, err := subject.GetTools(context.Background())
-
-	require.NoError(t, err)
-	require.Len(t, tools, 1)
-	assert.Implements(t, (*tool.BaseTool)(nil), tools[0])
 }

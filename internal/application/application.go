@@ -5,6 +5,7 @@ import (
 	"erlangb/agentmonitor/internal/config"
 	"erlangb/agentmonitor/internal/factory"
 	"erlangb/agentmonitor/internal/usecase"
+	"erlangb/agentmonitor/internal/usecase/mcp_use_case"
 	"erlangb/agentmonitor/internal/usecase/movie_reflexion"
 	"erlangb/agentmonitor/internal/usecase/simple"
 	"log/slog"
@@ -84,10 +85,22 @@ func loadUseCases(ctx context.Context, modelFactory *factory.EinoChatModelFactor
 	simpleLLmUseCase := simple.NewSimpleAgentLLMNoTools(modelFactory, opts)
 	refinerQueryUseCase := movie_reflexion.NewRefinerQueryUseCase(modelFactory, opts)
 
+	tavilyRawUseCase, err := mcp_use_case.NewTavilyFullInteractionTravelAssistant(ctx, modelFactory, toolsFactory, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	tavilyParsedUseCase, err := mcp_use_case.NewTavilyParsedTravelAssistant(ctx, modelFactory, toolsFactory, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	return []usecase.UseCase{
 		simpleLLmUseCase,
 		cinephileUseCase,
 		findMoviesUseCase,
 		refinerQueryUseCase,
+		tavilyRawUseCase,
+		tavilyParsedUseCase,
 	}, nil
 }

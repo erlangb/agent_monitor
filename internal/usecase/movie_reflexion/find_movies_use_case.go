@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/cloudwego/eino/compose"
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // FindMoviesUseCase orchestrates the full pipeline: refine → cinephile → clerk loop → curator.
@@ -21,32 +20,27 @@ type FindMoviesUseCase struct {
 
 // NewFindMoviesUseCase builds and wires all pipeline nodes, connects to Tavily MCP, and returns a FindMoviesUseCase.
 func NewFindMoviesUseCase(ctx context.Context, modelFactory *factory.EinoChatModelFactory, toolsFactory *factory.EinoToolsFactory, opts ...usecase.Option) (usecase.UseCase, error) {
-	refinerModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1-mini", 0.2, 1024)
+	refinerModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1", 0.2, 1024)
 	if err != nil {
 		return nil, err
 	}
 
-	cinephileModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1-mini", 0.7, 2048)
+	cinephileModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1", 0.7, 2048)
 	if err != nil {
 		return nil, err
 	}
 
-	clerkModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1-mini", 0.2, 2048)
+	clerkModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1", 0.2, 2048)
 	if err != nil {
 		return nil, err
 	}
 
-	curatorModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1-mini", 0.1, 2048)
+	curatorModel, err := modelFactory.CreateOpenAI(ctx, "gpt-4.1", 0.1, 2048)
 	if err != nil {
 		return nil, err
 	}
 
-	tavilyClient, err := toolsFactory.CreateMCPToolClient(ctx, factory.ToolSourceTavily)
-	if err != nil {
-		return nil, err
-	}
-
-	clerkTools, err := tavilyClient.EinoTools(ctx, []mcp.Tool{{Name: "tavily_search"}})
+	clerkTools, err := toolsFactory.CreateTavilyParsedEinoTools(ctx)
 	if err != nil {
 		return nil, err
 	}
