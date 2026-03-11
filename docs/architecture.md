@@ -18,6 +18,32 @@ The code is split into four concerns, top to bottom:
 
 ---
 
+## Use cases
+
+There are six use cases registered in `application.loadUseCases`:
+
+| Name | Package | What it does |
+|---|---|---|
+| `simple agent` | `usecase/simple` | Direct GPT call with `adk.Agent`, no tools |
+| `cinephile` | `usecase/movie_reflexion` | Single CinephileAgent invocation — LLM-only movie suggestions |
+| `refiner_query` | `usecase/movie_reflexion` | Single RefinerChain invocation — inspects structured query extraction |
+| `find_movies` | `usecase/movie_reflexion` | Full reflexion pipeline (see below) |
+| `tavily_raw` | `usecase/mcp_use_case` | TravelAssistant with raw Tavily tools — full MCP response forwarded to LLM |
+| `tavily_parsed` | `usecase/mcp_use_case` | TravelAssistant with parsed Tavily tools — response pre-filtered through `TavilyMcp` wrapper |
+
+---
+
+## MCP tool wrapping: raw vs parsed
+
+The two travel assistant use cases are intentionally identical except for how Tavily tools are created by `EinoToolsFactory`:
+
+- **`CreateTavilyRawEinoTools`** — calls `mc.GetEinoTools` directly. The full Tavily JSON (title, url, content, score, raw_content, …) is forwarded to the LLM as-is.
+- **`CreateTavilyParsedEinoTools`** — wraps the MCP client in a `TavilyMcp` domain struct, then uses `toolutils.InferTool` to expose a typed `TavilyQuery → string` function. Only `content` and `score` reach the LLM.
+
+This pair demonstrates the trade-off between raw MCP tool pass-through and typed tool wrappers. The `TavilyMcp` wrapper is the pattern to follow whenever you need to filter, transform, or add domain logic to an MCP tool response.
+
+---
+
 ## The main use case: FindMovies
 
 The most complete pipeline is `FindMoviesUseCase`. It takes a free-text movie request and returns a curated, fact-checked list of underground films. Four agent nodes run in sequence:

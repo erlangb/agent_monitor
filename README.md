@@ -37,6 +37,8 @@ At startup, both runners present a menu of available pipelines:
 | Cinephile | Structured extraction of movie search params from free text |
 | FindMovies | Full reflexion pipeline: refiner → cinephile → clerk (Tavily) → curator |
 | Refiner Query | Standalone query refiner for inspection |
+| Tavily Raw | Travel assistant: full Tavily MCP response (title, url, content, score, raw_content) passed directly to the LLM |
+| Tavily Parsed | Travel assistant: Tavily response pre-filtered to content+score only — demonstrates typed MCP tool wrapper (`TavilyMcp`) |
 
 ---
 
@@ -100,7 +102,7 @@ The reflexion loop runs inside an Eino `compose.Graph` with a branch condition o
 - Go 1.25+
 - [mockery](https://github.com/vektra/mockery) (for `make mocks`)
 - OpenAI API key
-- Tavily API key (for the FindMovies use case)
+- Tavily API key (for the FindMovies, Tavily Raw, and Tavily Parsed use cases)
 
 ### Installation
 
